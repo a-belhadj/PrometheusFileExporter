@@ -1,0 +1,31 @@
+groups:
+  - name: backup size issue
+    rules:
+      - alert: Backup on backup_for_my_service is lower than 10 bytes
+        expr: file_stat_last_file_size{service="backup_for_my_service"} < 10
+        annotations:
+          summary: Check backup sizes
+        labels:
+          service: backup_for_my_service
+      - alert: Backup on backup_for_my_other_service is lower than 10 bytes
+        expr: file_stat_last_file_size{service="backup_for_my_other_service"} < 10
+        annotations:
+          summary: Check backup sizes
+        labels:
+          service: backup_for_my_other_service
+  - name: backup frequency issue
+    rules:
+      - alert: No backup since 1 hours on backup_for_my_service
+        expr: file_stat_last_modification_time{service="backup_for_my_service"} < time() - 3600
+        for: 2m
+        annotations:
+          summary: Check backup frequency
+        labels:
+          service: backup_for_my_service
+      - alert: No backup since 1 hours on backup_for_my_other_service
+        expr: file_stat_last_modification_time{service="backup_for_my_other_service"} < time() - 3600
+        for: 2m
+        annotations:
+          summary: Check backup frequency
+        labels:
+          service: backup_for_my_other_service

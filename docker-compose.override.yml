@@ -1,0 +1,29 @@
+version: '3.9'
+volumes:
+  prometheus_data: {}
+  grafana_data: {}
+
+services:
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - 9090:9090
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/prometheus/alerts:/etc/prometheus/alerts:ro
+      - prometheus_data:/prometheus
+
+  grafana:
+    image: grafana/grafana:latest-ubuntu
+    ports:
+      - 3000:3000
+    volumes:
+      - ./docker/grafana/provisioning/:/etc/grafana/provisioning/:ro,z
+      - ./docker/grafana/grafana.ini:/etc/grafana/grafana.ini:ro,z
+      - grafana_data:/var/lib/grafana
+    environment:
+      GF_PATHS_CONFIG: "/etc/grafana/grafana.ini"
+      no_proxy: "prometheus"
+      NO_PROXY: "prometheus"
+

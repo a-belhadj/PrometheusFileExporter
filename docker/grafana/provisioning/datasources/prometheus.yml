@@ -1,0 +1,28 @@
+---
+# config file version
+apiVersion: 1
+
+# list of datasources to insert/update depending
+# whats available in the database
+datasources:
+  # <string, required> name of the datasource. Required
+  - uid: prometheus
+    name: Prometheus
+    type: prometheus
+    typeName: Prometheus
+    access: proxy
+    url: http://prometheus:9090
+    password: ''
+    user: ''
+    database: ''
+    basicAuth: false
+    isDefault: true
+    jsonData:
+      graphiteVersion: '1.1'
+      httpMethod: POST
+      tlsAuth: false
+      tlsAuthWithCACert: false
+    readOnly: false
+
+
+

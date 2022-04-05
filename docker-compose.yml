@@ -1,0 +1,14 @@
+version: '3.6'
+services:
+  pfe:
+    image: pfe:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 9000:9000
+    volumes:
+      - ./config.yml:/opt/exporter/config.yml:ro
+      - ./test_data:/opt/exporter/test_data:ro
+    env_file:
+      - env/pfe.env
