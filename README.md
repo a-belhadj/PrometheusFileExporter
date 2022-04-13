@@ -30,23 +30,38 @@ file_stat_last_file_size{service="backup_for_my_other_service"} 9.0
 
 Use environnement variables to override default settings, you can edit them in `env/pfe.env`:
 
-| Name                   | Default    | Description                         |
-| ---------------------- | ---------- | ----------------------------------- |
-| SCRAP_INTERVAL_SECONDS | 60         | Interval between two metrics update |
-| EXPORTER_PORT          | 9000       | Port to expose metrics              |
-| YAML_CONFIG_PATH       | config.yml | PATH of PFE configuration file      |
+| Name                   | Default    | Description                           |
+|------------------------|------------|---------------------------------------|
+| SCRAP_INTERVAL_SECONDS | 60         | Interval between two metrics update   |
+| EXPORTER_PORT          | 9000       | Port to expose metrics in container   |
+| YAML_CONFIG_PATH       | config.yml | PATH of PFE configuration file        |
+
+## Expose the PFE port
+
+Create a `docker-compose.override.yml` with the following lines to expose the port 9000 on your system.
+
+```yaml
+# docker-compose.override.yml
+version: '3.6'
+services:
+  pfe:
+    ports:
+      - 9000:9000
+```
+
+
 
 # Try it
 ## Docker-Compose
 A `docker-compose.yml` with Prometheus File Exporter is available.
-For demo purpose, I also provide a `docker-compose.override.yml` with a pre-configured Prometheus and Grafana.
+For demo purpose, `test.docker-compose.override.yml` can be used to expose a Prometheus and Grafana service.
 
 Dashboards and Alerts are in `./docker`.
 
 
 Let's try with: 
 ```bash
-docker-compose up
+docker-compose -f docker-compose.yml -f test.docker-compose.yml up
 ```
 
 Grafana is exposed on [localhost:3000](http://localhost:3000/d/pfe/prometheus-file-exporter)  
@@ -73,8 +88,7 @@ python3 -m src.exporter
 
 # Drivers
 
-PFE has been designed to support multiple drivers. You can write your own driver to track file on a cloud provider, or
-whatever you want.
+PFE has been designed to support multiple drivers. You can write your own driver to track file on a cloud provider, or whatever you want.
 
 ## DriverLocal
 
@@ -102,7 +116,7 @@ services:
 
 ## Write your own driver
 
-Create a file `my_driver.py` in `src/drivers/`. I recommend to start with driver_quickstart.py.
+Create a file `my_driver.py` in `src/drivers/`. Starting with driver_quickstart.py is recommended.
 
 ```bash
 cp src/drivers/driver_quickstart.py src/drivers/mydriver.py

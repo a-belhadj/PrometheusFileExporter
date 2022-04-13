@@ -1,9 +1,15 @@
-version: '3.9'
+version: '3.6'
 volumes:
   prometheus_data: {}
   grafana_data: {}
 
 services:
+
+  pfe:
+    volumes:
+      - ./test_data:/opt/exporter/test_data:ro
+    ports:
+      - 9000:9000
 
   prometheus:
     image: prom/prometheus:latest
