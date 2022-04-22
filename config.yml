@@ -1,10 +1,15 @@
 ---
+extra_labels_definition:
+  foo: default_bar
+
 services:
   backup_for_my_service:
     driver:
       name: DriverLocal
       config:
         path: ./test_data/backup_for_my_service/*.sql.gz
+    extra_labels:
+      foo: bar
 
   backup_for_my_other_service:
     driver:

@@ -17,9 +17,17 @@ class AppMetrics:
         self.logging = logging.getLogger(__name__)
         self.logging.info("Prometheus exporter started")
 
-        self.scrap_interval_seconds = scrap_interval_seconds
-        self.exporter_configs = self.parse_yaml_config(yaml_config_path)
+        self.yaml_file = open_yaml(yaml_config_path)
+
+        # Extra labels
+        self.extra_labels_default = self.get_extra_labels()
+        label_list = list(self.extra_labels_default.keys())
+        label_list.append("service")
+
+        # Configuration
+        self.exporter_configs = self.parse_yaml_config()
         self.registry = registry
+        self.scrap_interval_seconds = scrap_interval_seconds
 
         # Logging
         self.dump_conf()
@@ -27,38 +35,40 @@ class AppMetrics:
         # Metrics backup_count
         self.backup_count = Gauge(name="file_stat_count",
                                   documentation="File count for the service",
-                                  labelnames=['service'],
+                                  labelnames=label_list,
                                   registry=registry
                                   )
         self.latest_backup_timestamp = Gauge(name="file_stat_last_modification_time",
                                              documentation="Unix timestamp corresponding to the last "
                                                            "file modification for the service",
-                                             labelnames=['service'],
+                                             labelnames=label_list,
                                              registry=registry
                                              )
 
         self.latest_backup_size = Gauge(name="file_stat_last_file_size",
                                         documentation="Size in bytes of the latest modified file for the service",
-                                        labelnames=['service'],
+                                        labelnames=label_list,
                                         registry=registry
                                         )
 
-    @staticmethod
-    def parse_yaml_config(yaml_config_path):
-        yaml_file = open_yaml(yaml_config_path)
+    def get_extra_labels(self):
+        return self.yaml_file.get("extra_labels_definition", dict())
+
+    def parse_yaml_config(self):
         list_config = dict()
 
         try:
-            services = yaml_file["services"]
-        except KeyError as e:
-            raise KeyError(f'Error in your config file, "services" is missing.')
+            services = self.yaml_file["services"]
+        except KeyError:
+            raise KeyError('Error in your config file, "services" is missing.')
 
         for service, config in services.items():
             try:
                 list_config[service] = ExporterConfig(
-                    service=service,
-                    driver=config["driver"]["name"],
-                    driver_config=config["driver"].get("config", dict())
+                    service = service,
+                    driver = config["driver"]["name"],
+                    driver_config = config["driver"].get("config", dict()),
+                    extra_labels = self.extra_labels_default | config.get("extra_labels", dict())
                 )
             except KeyError as e:
                 raise KeyError(f'Error in your config file, "{e.args[0]}" is missing in "{service}".')
@@ -89,10 +99,12 @@ class AppMetrics:
                                'and latest_backup_timestamp '
                                '(e.g {"backup_count":10,"latest_backup_size":1000,'
                                ' "latest_backup_timestamp":1647253229})')
-
-            self.backup_count.labels(service=service).set(backup_count)
-            self.latest_backup_timestamp.labels(service=service).set(latest_backup_timestamp)
-            self.latest_backup_size.labels(service=service).set(latest_backup_size)
+            try:
+                self.backup_count.labels(**config.extra_labels).set(backup_count)
+                self.latest_backup_timestamp.labels(**config.extra_labels).set(latest_backup_timestamp)
+                self.latest_backup_size.labels(**config.extra_labels).set(latest_backup_size)
+            except ValueError:
+                raise ValueError(f'Extra label in service={service} not declared in extra_labels_definition')
 
             self.logging.info(
-                f'service={service} backup_count={backup_count} latest_backup_timestamp={latest_backup_timestamp}')
+                f'service={service} backup_count={backup_count} latest_backup_timestamp={latest_backup_timestamp} latest_backup_size={latest_backup_size}')

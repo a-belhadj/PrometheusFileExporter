@@ -1,3 +1,18 @@
+- [Prometheus File Exporter](#prometheus-file-exporter)
+- [How to configure](#how-to-configure)
+  - [Environment variables](#environment-variables)
+  - [Expose the PFE port](#expose-the-pfe-port)
+  - [Add extra labels](#add-extra-labels)
+- [Try it](#try-it)
+  - [Docker-Compose](#docker-compose)
+  - [Directly on your system](#directly-on-your-system)
+- [Drivers](#drivers)
+  - [DriverLocal](#driverlocal)
+  - [Write your own driver](#write-your-own-driver)
+    - [Make it available for PFE](#make-it-available-for-pfe)
+    - [Use your configuration in your driver's code](#use-your-configuration-in-your-drivers-code)
+    - [Override get_metrics()](#override-get_metrics)
+
 # Prometheus File Exporter
 
 Prometheus File Exporter is a Prometheus exporter to monitor file state.
@@ -28,6 +43,8 @@ file_stat_last_file_size{service="backup_for_my_other_service"} 9.0
 
 # How to configure
 
+## Environment variables
+
 Use environnement variables to override default settings, you can edit them in `env/pfe.env`:
 
 | Name                   | Default    | Description                           |
@@ -49,10 +66,49 @@ services:
       - 9000:9000
 ```
 
+## Add extra labels
+
+`extra_labels_definition` is a dict that contains key value labels that will be assigned to all your exposed `services`.
+
+A declared label value can be overrided on a particular service by declaring `extra_labels`.
+
+> NB: Extra labels in services need to be declared in `extra_labels_definition`. It means that you have to declare **all** your extra_labels in `extra_labels_definition`
+
+```yaml
+#config.yml
+---
+extra_labels_definition:
+  foo: default_bar
+
+services:
+  backup_for_my_service:
+    driver:
+      name: DriverLocal
+      config:
+        path: ./test_data/backup_for_my_service/*.sql.gz
+    extra_labels:
+      foo: bar
+
+  backup_for_my_other_service:
+    driver:
+      name: DriverLocal
+      config:
+        path: ./test_data/backup_for_my_other_service/*.tar.bz2
+```
+
+This will produce the following metrics:
+```python
+# HELP file_stat_count File count for the service
+# TYPE file_stat_count gauge
+file_stat_count{foo="default_bar",service="backup_for_my_other_service"} 2.0
+file_stat_count{foo="bar",service="backup_for_my_service"} 1.0
+```
 
 
 # Try it
+
 ## Docker-Compose
+
 A `docker-compose.yml` with Prometheus File Exporter is available.
 For demo purpose, `test.docker-compose.override.yml` can be used to expose a Prometheus and Grafana service.
 
@@ -70,10 +126,8 @@ Exporter on [localhost:9000](http://localhost:9000)
 
 > Use docker-compose.yml to override environnement variables and configure PFE
 
-### Grafana Screenshots 
-#### Full dashboards
+Examples:
 ![Full dashboard](media/grafana_dashboard.png)
-#### Dashboard by services
 ![Dashboard by services](media/dashboard_by_services.png)
 
 ## Directly on your system
@@ -186,3 +240,4 @@ def get_metrics(self):
     metrics["latest_backup_size"] =  len(requests.get("MYAPI"))
     return metrics
 ```
+
